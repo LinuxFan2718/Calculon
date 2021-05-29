@@ -58,3 +58,20 @@ python dca.py
 I recommended setting up this file to run using cron every week
 or month to take advantage of
 [dollar cost averaging](https://www.investopedia.com/terms/d/dollarcostaveraging.asp).
+
+## Fee advantage
+
+On Sat, May 29 at 5:25pm ET I executed a $100 ETH buy using this
+dca script. 
+
+### Coinbase Pro buy
+
+0.04435264 ETH
+
+### Coinbase UI buy
+
+0.0430622 ETH
+
+### Difference
+
+0.00129044 ETH which is $2.89
