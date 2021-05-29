@@ -41,3 +41,20 @@ tell you whether your `.env` values are working.
 ```bash
 python test-auth.py
 ```
+
+## Buy crypto with USD
+
+You must have a funding method configured in Coinbase Pro
+
+Configure the constants at the top of the file `dca.py` for
+the amount and cryptocurrency you want.
+
+Then run the file to buy.
+
+```bash
+python dca.py
+```
+
+I recommended setting up this file to run using cron every week
+or month to take advantage of
+[dollar cost averaging](https://www.investopedia.com/terms/d/dollarcostaveraging.asp).
