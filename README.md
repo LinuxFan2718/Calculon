@@ -59,6 +59,13 @@ I recommended setting up this file to run using cron every week
 or month to take advantage of
 [dollar cost averaging](https://www.investopedia.com/terms/d/dollarcostaveraging.asp).
 
+## Question: How do you save money buying ETH with Calculon?
+
+Answer: For some reason, Coinbase charges a much higher fee when
+you buy using www.coinbase.com vs. using Coinbase Pro. You can
+get the lower price using pro.coinbase.com, or using their API
+with a bot like this one.
+
 ## Fee advantage
 
 On Sat, May 29 at 5:25pm ET I executed a $100 ETH buy using this
