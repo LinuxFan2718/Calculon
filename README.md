@@ -37,3 +37,7 @@ Do not share these values with anyone or check them into a git repo.
 
 To test your Coinbase Pro API config, run test-auth.py, the output will
 tell you whether your `.env` values are working.
+
+```bash
+python test-auth.py
+```
