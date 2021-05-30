@@ -1,9 +1,10 @@
-BUY_AMOUNT_USD = '100.00'
+BUY_AMOUNT_USD = '20.00'
 PRODUCT = "ETH-USD"
 
 import cbpro
 from dotenv import dotenv_values
 import time
+import pprint
 
 config = dotenv_values(".env")
 key = config['API_KEY']
@@ -24,7 +25,7 @@ currency = "USD"
 # https://github.com/danpaquin/coinbasepro-python/blob/5658b2212b0fe39dde18b792f34aeaf81dda6640/cbpro/authenticated_client.py#L798        
 result1 = auth_client.deposit(amount, currency, payment_method_id)
 
-print(result1)
+pprint.pprint(result1)
 print("*" * 80)
 
 # your account must have enough USD for this to work
@@ -48,4 +49,4 @@ while(buy_made == False and attempts < max_attempts):
   else:
     buy_made = True
 
-print(result2)
+pprint.pprint(result2)
