@@ -59,6 +59,78 @@ I recommended setting up this file to run using cron every week
 or month to take advantage of
 [dollar cost averaging](https://www.investopedia.com/terms/d/dollarcostaveraging.asp).
 
+## Using cron to autobuy
+
+First, ssh into your server.
+
+As your user, pull down the git repo, and create the `.env`
+file on your server in the repo.
+
+I had to specify the full path when loading the env file, so
+edit the source code like this. (My user on this server is
+named ethereum, this used to be a ethereum node server.)
+
+```diff
+-config = dotenv_values(".env")  # config = {"USER": "foo", "EMAIL": "foo@example.org"}
++config = dotenv_values("/home/ethereum/Calculon/.env")  # config = {"USER": "foo", "EMAIL": "foo@example.org"}
+```
+
+You'll need to create a shell script that runs the python
+script. Mine looks like this, named dailybuy.sh
+
+```bash
+#!/bin/bash
+
+/home/ethereum/.pyenv/shims/python /home/ethereum/Calculon/dca.py
+```
+
+As you can see, I installed pyenv on my server. However you install
+python, make a shell script using full paths for python and the source
+code file.
+
+For this part, I recommend making the above changes to test-auth.py
+and created a dailytest.sh script to run it, so you can test your cron
+setup.
+
+To edit cron, don't try to edit /etc/crontab as root. Instead, as your
+regular user, run `crontab -e`. Add a line like this
+
+```
+* * * * * /home/ethereum/Calculon/dailytest.sh >> /home/ethereum/cron.log 2>&1
+```
+
+No need to send SIGHUP to the cron service. Just save your changes,
+then run
+
+```bash
+tail -f ~/cron.log
+```
+
+Fix any errors you see, this setup will test your credentials every single
+minute of every day, so once it works, comment out that line.
+
+Now add a line to crontab running your daily buy, set the time to once a day,
+and watch it happen by tail -f your cron log file, and in the Coinbase Pro
+interface!
+
+For example,
+
+```
+50 5 * * * /home/ethereum/Calculon/dailybuy.sh >> /home/ethereum/cron.log 2>&1
+```
+
+Does a daily buy at 5:50am UTC. Check your cron timezone with
+
+```bash
+cat /etc/localtime
+```
+
+Also useful is
+
+```bash
+date
+```
+
 ## Question: How do you save money buying ETH with Calculon?
 
 Answer: For some reason, Coinbase charges a much higher fee when
