@@ -1,6 +1,14 @@
 # Calculon
 cryptocurrency trading bot using the Coinbase Pro API
 
+# Requirements
+
+To run this software you need experience using python and cron, and
+a server to run the software 24/7.
+
+I am building a web app to make it easy for anyone to use it,
+coming soon!
+
 # Library
 
 [cbpro](https://github.com/danpaquin/coinbasepro-python)
