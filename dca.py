@@ -37,6 +37,7 @@ attempts = 0
 max_attempts = 3
 while(buy_made == False and attempts < max_attempts):
   attempts += 1
+  # https://github.com/danpaquin/coinbasepro-python/blob/5658b2212b0fe39dde18b792f34aeaf81dda6640/cbpro/authenticated_client.py#L381
   result2 = auth_client.place_market_order(product_id=PRODUCT, 
                                 side='buy', 
                                 funds=BUY_AMOUNT_USD)
