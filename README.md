@@ -162,3 +162,21 @@ dca script.
 ### Difference
 
 0.00129044 ETH which is $2.89
+
+## How to set up roberto
+
+Create a separate "Portfolio" in the Coinbase Pro web console and fund it with USD and the desired token to trade.
+
+Create an API key in the new Portfolio without transfer permission.
+
+Add the API key to `.env` in this directory, in the keys starting with BEGINNER. (See the roberto.py source code if a hint is needed.)
+
+Edit the constants at the top of roberto.py
+
+Run roberto
+
+```python
+python roberto.py
+```
+
+You should see some info printed to the terminal.
