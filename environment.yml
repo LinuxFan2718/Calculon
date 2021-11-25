@@ -8,6 +8,7 @@ dependencies:
   - scipy
   - matplotlib
   - gpstime
+  - ipython
   - pip
   - pip:
     - cbpro
