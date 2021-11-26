@@ -23,7 +23,7 @@ class MyWebsocketClient(cbpro.WebsocketClient):
         self.prices = []
         self.times = []
         self.start_datetime = 0
-        print("Let's count the messages!")
+        # print("Let's count the messages!")
         return
 
     def on_message(self, data_dict):
@@ -43,7 +43,7 @@ class MyWebsocketClient(cbpro.WebsocketClient):
             self.prices.append( temp_price )
             self.times.append( temp_time )
 
-        print(data_dict)
+        # print(data_dict)
         self.message_count += 1
         return
 
@@ -95,18 +95,14 @@ def init():
     return line,
 
 def animate(i, xs, ys):
-
-    # Draw x and y lists
-    # ax.clear()
-    # ax.plot(xs, ys)
-    print('\033[91m')
-    print(f"xs: {xs}")
-    print(f"ys: {ys}")
-    print('\033[0m')
+    # print('\033[91m')
+    # print(f"xs: {xs}")
+    # print(f"ys: {ys}")
+    # print('\033[0m')
     
     xs_max = max(xs)
-    ys_min = 0.99 * min(ys)
-    ys_max = 1.01 * max(ys)
+    ys_min = min(ys)
+    ys_max = max(ys)
 
     ax.set_xlim([0.0, xs_max])
     ax.set_ylim([ys_min, ys_max])
