@@ -1,6 +1,6 @@
-BUY_AMOUNT_USD = 20.0
-PRODUCT = "ETH-USD"
-SWING_SIZE = 0.0
+BUY_AMOUNT_USD = 100.0
+PRODUCT = "MATIC-USD"
+SWING_SIZE = 0.05
 DEBUG = True
 
 import cbpro
@@ -24,8 +24,8 @@ buy_price = round((1 - SWING_SIZE) * current_price, 2)
 sell_price = round((1 + SWING_SIZE) * current_price, 2)
 
 # calculate amount, i.e. "size", of crypto to buy, for now the same
-buy_amount = round(BUY_AMOUNT_USD / current_price, 8)
-sell_amount = round(BUY_AMOUNT_USD / current_price, 8)
+buy_amount = round(BUY_AMOUNT_USD / current_price, 1)
+sell_amount = round(BUY_AMOUNT_USD / current_price, 1)
 
 if DEBUG:
   print(f"buy price      {buy_price} $")
