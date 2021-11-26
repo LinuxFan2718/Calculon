@@ -65,7 +65,7 @@ for order in list_orders:
     if order["side"] == "sell":
         temp_price = round(float(order["price"]), 2)
         temp_diff = round(temp_price - current_price, 2)
-        temp_percent_diff = temp_diff / current_price
+        temp_percent_diff = 100 * temp_diff / current_price
         print(f"{temp_price}   (\033[92m +{temp_diff} \033[0m) (\033[92m {temp_percent_diff:.3f} % \033[0m)")
 
 print("\033[96m")
@@ -82,7 +82,7 @@ for order in list_orders:
     if order["side"] == "buy":
         temp_price = round(float(order["price"]), 2)
         temp_diff = round(temp_price - current_price, 2)
-        temp_percent_diff = temp_diff / current_price
+        temp_percent_diff = 100 * temp_diff / current_price
         print(f"{temp_price}   (\033[91m {temp_diff} \033[0m) (\033[91m {temp_percent_diff:.3f} % \033[0m)")
 print()
 
