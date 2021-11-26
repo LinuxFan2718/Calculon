@@ -1,7 +1,8 @@
-BUY_AMOUNT_USD = 0.0
+BUY_AMOUNT_USD = 100.0
 PRODUCT = "ETH-USD"
 SWING_SIZE = 0.05
 DEBUG = True
+PLACE_ORDERS = True
 
 import cbpro
 from dotenv import dotenv_values
@@ -38,20 +39,21 @@ if DEBUG:
 
 # create limit orders
 # Limit order-specific method
-buy_order = auth_client.place_limit_order(product_id=PRODUCT, 
-                              side='buy', 
-                              price=buy_price, 
-                              size=buy_amount)
+if PLACE_ORDERS:
+  buy_order = auth_client.place_limit_order(product_id=PRODUCT,
+                                side='buy',
+                                price=buy_price,
+                                size=buy_amount)
 
-sell_order = auth_client.place_limit_order(product_id=PRODUCT, 
-                              side='sell', 
-                              price=sell_price, 
-                              size=sell_amount)
+  sell_order = auth_client.place_limit_order(product_id=PRODUCT,
+                                side='sell',
+                                price=sell_price,
+                                size=sell_amount)
 
-if 'message' in buy_order:
-  print('buy error:', buy_order['message'])
-if 'message' in sell_order:
-  print('sell error:', sell_order['message'])
+  if 'message' in buy_order:
+    print('buy error:', buy_order['message'])
+  if 'message' in sell_order:
+    print('sell error:', sell_order['message'])
 
 orders = auth_client.get_orders()
 list_orders = list(orders)
