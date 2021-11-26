@@ -1,6 +1,6 @@
 BUY_AMOUNT_USD = 20.0
 PRODUCT = "ETH-USD"
-SWING_SIZE = 0.01
+SWING_SIZE = 0.0
 DEBUG = True
 
 import cbpro
@@ -55,9 +55,36 @@ if 'message' in sell_order:
 
 orders = auth_client.get_orders()
 list_orders = list(orders)
-for order in orders:
-  print(order)
-pass
+
+# Pretty print limit orders and current price
+print("\033[92m")
+print("Limit Sells")
+print("===========")
+print("\033[0m", end="")
+for order in list_orders:
+    if order["side"] == "sell":
+        temp_price = round(float(order["price"]), 2)
+        temp_diff = round(temp_price - current_price, 2)
+        temp_percent_diff = temp_diff / current_price
+        print(f"{temp_price}   (\033[92m +{temp_diff} \033[0m) (\033[92m {temp_percent_diff:.3f} % \033[0m)")
+
+print("\033[96m")
+print("Current Price")
+print("=============")
+print("\033[0m", end="")
+print(current_price)
+
+print("\033[91m")
+print("Limit Buys")
+print("==========", end="")
+print("\033[0m")
+for order in list_orders:
+    if order["side"] == "buy":
+        temp_price = round(float(order["price"]), 2)
+        temp_diff = round(temp_price - current_price, 2)
+        temp_percent_diff = temp_diff / current_price
+        print(f"{temp_price}   (\033[91m {temp_diff} \033[0m) (\033[91m {temp_percent_diff:.3f} % \033[0m)")
+print()
 
 # sample order
 # 'id':'3db19014-f97d-449c-b40e-2122a1d73e50'
