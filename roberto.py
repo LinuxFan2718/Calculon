@@ -1,6 +1,6 @@
-BUY_AMOUNT_USD = '20.00'
-PRODUCT = "MATIC-USD"
-SWING_SIZE = 0.05
+BUY_AMOUNT_USD = 20.0
+PRODUCT = "ETH-USD"
+SWING_SIZE = 0.01
 DEBUG = True
 
 import cbpro
@@ -8,9 +8,9 @@ from dotenv import dotenv_values
 
 # initialize
 config = dotenv_values(".env")
-key = config['BEGINNER_API_KEY']
-b64secret = config['BEGINNER_API_SECRET']
-passphrase = config['BEGINNER_PASSPHRASE']
+key = config['API_KEY']
+b64secret = config['API_SECRET']
+passphrase = config['PASSPHRASE']
 auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase)
 
 # retrieve current price
@@ -20,24 +20,33 @@ current_ask = float(order_book['asks'][0][0])
 current_price = (current_bid + current_ask) / 2
 
 # calculate prices
-buy_price = round((1 - SWING_SIZE) * current_price, 4)
-sell_price = round((1 + SWING_SIZE) * current_price, 4)
+buy_price = round((1 - SWING_SIZE) * current_price, 2)
+sell_price = round((1 + SWING_SIZE) * current_price, 2)
+
+# calculate amount, i.e. "size", of crypto to buy, for now the same
+buy_amount = round(BUY_AMOUNT_USD / current_price, 8)
+sell_amount = round(BUY_AMOUNT_USD / current_price, 8)
+
 if DEBUG:
-  print("buy price    ", buy_price)
-  print("current price", current_price)
-  print("sell price   ", sell_price)
+  print(f"buy price      {buy_price} $")
+  print(f"current price  {current_price} $")
+  print(f"sell price     {sell_price} $")
+
+  product_traded = PRODUCT.split('-')[0]
+  print(f"buy amount     {buy_amount} {product_traded}")
+  print(f"buy amount     {sell_amount} {product_traded}")
 
 # create limit orders
 # Limit order-specific method
 buy_order = auth_client.place_limit_order(product_id=PRODUCT, 
                               side='buy', 
                               price=buy_price, 
-                              size=BUY_AMOUNT_USD)
+                              size=buy_amount)
 
 sell_order = auth_client.place_limit_order(product_id=PRODUCT, 
                               side='sell', 
                               price=sell_price, 
-                              size=BUY_AMOUNT_USD)
+                              size=sell_amount)
 
 if 'message' in buy_order:
   print('buy error:', buy_order['message'])
