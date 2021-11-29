@@ -173,10 +173,10 @@ Add the API key to `.env` in this directory, in the keys starting with BEGINNER.
 
 Edit the constants at the top of roberto.py
 
-Run roberto
+Run `roberto.py` to set up limit orders for 10 dollars worth of ETH with a 5 percent separation (buy low, sell high)
 
 ```python
-python roberto.py
+python roberto.py ETH-USD 10.0 5.0
 ```
 
 You should see some info printed to the terminal.
