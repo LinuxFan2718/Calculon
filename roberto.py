@@ -22,13 +22,20 @@ current_price = (current_bid + current_ask) / 2
 buy_price = round((1 - SWING_SIZE) * current_price, 2)
 sell_price = round((1 + SWING_SIZE) * current_price, 2)
 
-# calculate amount, i.e. "size", of crypto to buy, for now the same
-buy_amount = round(BUY_AMOUNT_USD / current_price, 8)
-sell_amount = round(BUY_AMOUNT_USD / current_price, 8)
+def round_size():
+  if PRODUCT == "MATIC-USD":
+    return 1
+  elif PRODUCT == 'ETH-USD':
+    return 8
 
-print(f"{PRODUCT} current price: ${current_price}")
-print(f"buy  {PRODUCT} ${buy_price} ({buy_amount})")
-print(f"sell {PRODUCT} ${sell_price} ({sell_amount})")
+# calculate amount, i.e. "size", of crypto to buy, for now the same
+buy_amount = round(BUY_AMOUNT_USD / current_price, round_size())
+sell_amount = round(BUY_AMOUNT_USD / current_price, round_size())
+
+crypto = PRODUCT.split('-')[0]
+print(f"{crypto} current price: ${current_price}")
+print(f"buy  {PRODUCT} ${buy_price} ${BUY_AMOUNT_USD} ({buy_amount} {crypto})")
+print(f"sell {PRODUCT} ${sell_price} ${BUY_AMOUNT_USD} ({sell_amount} {crypto})")
 print("place limit orders? (y/n)")
 ans = input()
 if ans == 'y':
