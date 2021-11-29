@@ -3,7 +3,7 @@ import cbpro
 from dotenv import dotenv_values
 import argparse
 
-parser = argparse.ArgumentParser(description='Sets up limit orders for the chosen cryptocurrency product on Coinbase Pro.\nExample:\n')
+parser = argparse.ArgumentParser(description='Sets up limit orders for the chosen cryptocurrency product on Coinbase Pro.\nExample:\npython roberto.py ETH-USD 1000.0 5.0')
 parser.add_argument('product', type=str, 
                     help='Cryptocurrency product to buy, e.g. ETH-USD, BTC-USD, MATIC-USD')
 parser.add_argument('buy_amount_usd', type=float, 
