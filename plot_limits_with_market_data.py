@@ -185,6 +185,7 @@ if __name__ == "__main__":
             if buysell == "buys":
                 ax.plot([0.0, 1.0], [price, price], lw=1.5, color="C3", label=f"{buysell} {jj}")
 
+    ax.legend(loc='upper left')
 
     # Set up plot to call animate() function periodically
     ani = animation.FuncAnimation(fig, animate, init_func=init, fargs=(wsClient.times, wsClient.prices, orders_dict), interval=200)
