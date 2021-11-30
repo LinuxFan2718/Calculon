@@ -40,7 +40,7 @@ print("\033[92m")
 print("Filled Sells")
 print("=============")
 print("\033[0m", end="")
-print("Value        Fees")
+print("      Value         Fees")
 total_sell_value = 0.0
 total_sell_fees = 0.0
 for order in list_orders:
@@ -54,13 +54,13 @@ for order in list_orders:
             total_sell_value += temp_value
             total_sell_fees += temp_fees
 
-            print(f"{temp_value:.2f} USD  {temp_fees:.2f} USD ")
+            print(f"{temp_value:7.2f} USD  {temp_fees:7.2f} USD ")
 
 print("\033[91m")
 print("Filled Buys")
 print("=============")
 print("\033[0m", end="")
-print("Value        Fees")
+print("      Value         Fees")
 total_buy_value = 0.0
 total_buy_fees = 0.0
 for order in list_orders:
@@ -74,21 +74,21 @@ for order in list_orders:
             total_buy_value += temp_value
             total_buy_fees += temp_fees
 
-            print(f"{temp_value:.2f} USD  {temp_fees:.2f} USD ")
+            print(f"{temp_value:7.2f} USD  {temp_fees:7.2f} USD ")
 
 print("\033[92m")
 print("Total Sells")
 print("-------------")
 print("\033[0m", end="")
-print("Value        Fees")
-print(f"{total_sell_value:.2f} USD  {total_sell_fees:.2f} USD ")
+print("      Value         Fees")
+print(f"{total_sell_value:7.2f} USD  {total_sell_fees:7.2f} USD ")
 
 print("\033[91m")
 print("Total Buys")
 print("-------------")
 print("\033[0m", end="")
-print("Value        Fees")
-print(f"{total_buy_value:.2f} USD  {total_buy_fees:.2f} USD ")
+print("      Value         Fees")
+print(f"{total_buy_value:7.2f} USD  {total_buy_fees:7.2f} USD ")
 
 print("\033[96m")
 print("Current Price")
@@ -100,8 +100,8 @@ print()
 total_profits = total_sell_value - total_buy_value - total_sell_fees - total_buy_fees
 
 print("\033[93m")
-print("Profits")
-print("-------")
+print("  Profits")
+print("-----------")
 print("\033[0m", end="")
-print(f"{total_profits:.2f} USD ")
+print(f"{total_profits:7.2f} USD ")
 print()
