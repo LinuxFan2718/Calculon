@@ -180,3 +180,21 @@ python roberto.py ETH-USD 10.0 5.0
 ```
 
 You should see some info printed to the terminal.
+
+## How to set up cron_roberto
+
+On Mac, I used `crontab -e` to set up a cron job which looks like
+
+```
+* * * * * cd ~/Git/Calculon/ && /anaconda3/envs/calculon/bin/python cron_roberto.py ETH-USD 1000.0 5.0
+```
+
+The first command just changes the directory to where the API key is,
+the second calls `cron_roberto.py` which will check if any orders have executed, 
+and if they have, set up a new pair using roberto.set_limit_orders().
+
+You can also run directly from the command line like
+
+```
+python cron_roberto.py ETH-USD 10.0 5.0
+```
