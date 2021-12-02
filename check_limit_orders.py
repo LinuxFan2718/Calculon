@@ -23,7 +23,8 @@ auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase)
 # Get user limit orders
 orders = auth_client.get_orders()
 list_orders = list(orders)
-# print(list_orders)
+for order in list_orders:
+    print(order)
 
 # retrieve current price
 order_book = auth_client.get_product_order_book(PRODUCT)
@@ -43,7 +44,7 @@ for order in list_orders:
         temp_size_price = round(temp_size * temp_price, 2)
         temp_diff = round(temp_price - current_price, 2)
         temp_percent_diff = 100 * temp_diff / current_price
-        print(f"{temp_price:7.2f} USD  {temp_size_price:7.2f} USD  (\033[92m +{temp_diff} \033[0m) (\033[92m {temp_percent_diff:.1f} % \033[0m)")
+        print(f"{temp_price:7.2f} {SELL}  {temp_size:7f} {BUY}  (\033[92m +{temp_diff} \033[0m) (\033[92m {temp_percent_diff:.1f} % \033[0m)")
 
 print("\033[96m")
 print("Current Price")
@@ -63,5 +64,5 @@ for order in list_orders:
         temp_size_price = round(temp_size * temp_price, 2)
         temp_diff = round(temp_price - current_price, 2)
         temp_percent_diff = 100 * temp_diff / current_price
-        print(f"{temp_price:7.2f} USD  {temp_size_price:7.2f} USD  (\033[91m {temp_diff} \033[0m) (\033[91m {temp_percent_diff:.1f} % \033[0m)")
+        print(f"{temp_price:7.2f} {SELL}  {temp_size:7f} {BUY}  (\033[91m {temp_diff} \033[0m) (\033[91m {temp_percent_diff:.1f} % \033[0m)")
 print()
