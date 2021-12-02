@@ -3,138 +3,136 @@ import cbpro
 from dotenv import dotenv_values
 import argparse
 
-parser = argparse.ArgumentParser(description='Sets up limit orders for the chosen cryptocurrency product on Coinbase Pro.\nExample:\npython roberto.py ETH-USD 1000.0 5.0')
-parser.add_argument('product', type=str, 
-                    help='Cryptocurrency product to buy, e.g. ETH-USD, BTC-USD, MATIC-USD')
-parser.add_argument('buy_amount_usd', type=float, 
-                    help='Amount of crypto to buy in US dollars')
-parser.add_argument('swing_percent', type=float, default=5.0,
-                    help='Percent to set limit orders above and below.  Must be between 0 and 100.  Default is 5.0')
-parser.add_argument('--yes', '-y', action='store_true',
-                    help='Flag.  If set, does not need confirmation to set up limit orders.')
-parser.add_argument('--quiet', '-q', action='store_true',
-                    help='Flag.  If set, runs code in quiet mode.')
+def parse_args():
+    """Parses the user command line arguments
+    """
+    parser = argparse.ArgumentParser(description='Sets up limit orders for the chosen cryptocurrency product on Coinbase Pro.\nExample:\npython roberto.py ETH-USD 1000.0 5.0')
+    parser.add_argument('product', type=str, 
+                        help='Cryptocurrency product to buy, e.g. ETH-USD, BTC-USD, MATIC-USD')
+    parser.add_argument('buy_amount_usd', type=float, 
+                        help='Amount of crypto to buy in US dollars')
+    parser.add_argument('swing_percent', type=float, default=5.0,
+                        help='Percent to set limit orders above and below.  Must be between 0 and 100.  Default is 5.0')
+    parser.add_argument('--yes', '-y', action='store_true',
+                        help='Flag.  If set, does not need confirmation to set up limit orders.')
+    parser.add_argument('--quiet', '-q', action='store_true',
+                        help='Flag.  If set, runs code in quiet mode.')
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-# Don't use namespaces
-product = args.product
-buy_amount_usd = args.buy_amount_usd
-swing_percent = args.swing_percent
-yes = args.yes
-quiet = args.quiet
+    # Don't use namespaces
+    product = args.product
+    buy_amount_usd = args.buy_amount_usd
+    swing_percent = args.swing_percent
+    yes = args.yes
+    quiet = args.quiet
 
-if not quiet:
-  print(f"product         = {product}")
-  print(f"buy_amount_usd  = {buy_amount_usd}")
-  print(f"swing_percent   = {swing_percent}")
-  print(f"yes             = {yes}")
-  print(f"quiet           = {quiet}")
+    if not quiet:
+        print(f"product         = {product}")
+        print(f"buy_amount_usd  = {buy_amount_usd}")
+        print(f"swing_percent   = {swing_percent}")
+        print(f"yes             = {yes}")
+        print(f"quiet           = {quiet}")
 
-# Check out user inputs
-if swing_percent < 0.0:
-  print(f"swing_percent = {swing_percent} is not valid")
-elif swing_percent > 100.0:
-  print(f"swing_percent = {swing_percent} is not valid")
-else:
-  swing_size = swing_percent / 100.0
+    return product, buy_amount_usd, swing_percent, yes, quiet
 
-# initialize
-config = dotenv_values(".env")
-key = config['API_KEY']
-b64secret = config['API_SECRET']
-passphrase = config['PASSPHRASE']
-auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase)
 
-# retrieve current price
-order_book = auth_client.get_product_order_book(product)
-current_bid = float(order_book['bids'][0][0])
-current_ask = float(order_book['asks'][0][0])
-current_price = (current_bid + current_ask) / 2
+def set_limit_orders(product, buy_amount_usd, swing_percent, yes, quiet):
+    """main function of roberto.py.
+    Sets the buy low / sell high limit orders for the cryptocurrency product specified.
 
-# calculate prices
-buy_price = round((1 - swing_size) * current_price, 2)
-sell_price = round((1 + swing_size) * current_price, 2)
+    Inputs:
+    -------
+    product: str
+        Coinbase pro cryptocurrency to set limit orders on, e.g. 'ETH-USD', or 'MATIC-USD'
+    buy_amount_usd: float
+        Central amount of cryptocurrency to trade at the current price, e.g. 1000.0
+    swing_percent: float
+        Percent amount above and below the current price to set the limit orders at, e.g. 5.0
+    yes: bool
+        Flag. If set, user will not need to manually type 'y' to activate limit orders
+    quiet: bool
+        Flag. If set, does not print so much to terminal.
 
-def round_size(product):
-  if product == "MATIC-USD":
-    return 1
-  elif product == 'ETH-USD':
-    return 8
+    """
 
-# calculate amount, i.e. "size", of crypto to buy, for now the same
-buy_amount = round(buy_amount_usd / current_price, round_size(product))
-sell_amount = round(buy_amount_usd / current_price, round_size(product))
+    # Check out user inputs
+    if swing_percent < 0.0:
+        print(f"swing_percent = {swing_percent} is not valid")
+    elif swing_percent > 100.0:
+        print(f"swing_percent = {swing_percent} is not valid")
+    else:
+        swing_size = swing_percent / 100.0
 
-crypto = product.split('-')[0]
-if not quiet:
-  print()
-  print("\033[93m", end="")
-  print(f"{crypto} current price: ${current_price}")
-  print("\033[0m", end="")
-  print("\033[92m", end="")
-  print(f"buy  {product} ${buy_price} ${buy_amount_usd} ({buy_amount} {crypto})")
-  print("\033[0m", end="")
-  print("\033[91m", end="")
-  print(f"sell {product} ${sell_price} ${buy_amount_usd} ({sell_amount} {crypto})")
-  print("\033[0m", end="")
+    # initialize
+    config = dotenv_values(".env")
+    key = config['API_KEY']
+    b64secret = config['API_SECRET']
+    passphrase = config['PASSPHRASE']
+    auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase)
 
-if yes:
-  ans = 'y'
-else:
-  print("place limit orders? (y/n)")
-  ans = input()
+    # retrieve current price
+    order_book = auth_client.get_product_order_book(product)
+    current_bid = float(order_book['bids'][0][0])
+    current_ask = float(order_book['asks'][0][0])
+    current_price = (current_bid + current_ask) / 2
 
-if ans == 'y':
-  buy_order = auth_client.place_limit_order(product_id=product,
-                                side='buy',
-                                price=buy_price,
-                                size=buy_amount)
+    # calculate prices
+    buy_price = round((1 - swing_size) * current_price, 2)
+    sell_price = round((1 + swing_size) * current_price, 2)
 
-  sell_order = auth_client.place_limit_order(product_id=product,
-                                side='sell',
-                                price=sell_price,
-                                size=sell_amount)
+    def round_size(product):
+        if product == "MATIC-USD":
+            return 1
+        elif product == 'ETH-USD':
+            return 8
 
-  if 'message' in buy_order:
-    print('buy error:', buy_order['message'])
-  if 'message' in sell_order:
-    print('sell error:', sell_order['message'])
-else:
-  print(f"orders aborted")
+    # calculate amount, i.e. "size", of crypto to buy, for now the same
+    buy_amount = round(buy_amount_usd / current_price, round_size(product))
+    sell_amount = round(buy_amount_usd / current_price, round_size(product))
 
-# Pretty print limit orders and current price
-def print_order_book():
-  orders = auth_client.get_orders()
-  list_orders = list(orders)
-  print("\033[92m")
-  print("Limit Sells")
-  print("===========")
-  print("\033[0m", end="")
-  for order in list_orders:
-      if order["side"] == "sell":
-          temp_price = round(float(order["price"]), 2)
-          temp_diff = round(temp_price - current_price, 2)
-          temp_percent_diff = 100 * temp_diff / current_price
-          print(f"{temp_price}   (\033[92m +{temp_diff} \033[0m) (\033[92m {temp_percent_diff:.3f} % \033[0m)")
+    crypto = product.split('-')[0]
+    if not quiet:
+        print()
+        print("\033[93m", end="")
+        print(f"{crypto} current price: ${current_price}")
+        print("\033[0m", end="")
+        print("\033[92m", end="")
+        print(f"buy  {product} ${buy_price} ${buy_amount_usd} ({buy_amount} {crypto})")
+        print("\033[0m", end="")
+        print("\033[91m", end="")
+        print(f"sell {product} ${sell_price} ${buy_amount_usd} ({sell_amount} {crypto})")
+        print("\033[0m", end="")
 
-  print("\033[96m")
-  print("Current Price")
-  print("=============")
-  print("\033[0m", end="")
-  print(current_price)
+    if yes:
+        ans = 'y'
+    else:
+        print("place limit orders? (y/n)")
+        ans = input()
 
-  print("\033[91m")
-  print("Limit Buys")
-  print("==========", end="")
-  print("\033[0m")
-  for order in list_orders:
-      if order["side"] == "buy":
-          temp_price = round(float(order["price"]), 2)
-          temp_diff = round(temp_price - current_price, 2)
-          temp_percent_diff = 100 * temp_diff / current_price
-          print(f"{temp_price}   (\033[91m {temp_diff} \033[0m) (\033[91m {temp_percent_diff:.3f} % \033[0m)")
-  print()
+    if ans == 'y':
+        buy_order = auth_client.place_limit_order(product_id=product,
+                                        side='buy',
+                                        price=buy_price,
+                                        size=buy_amount)
+
+        sell_order = auth_client.place_limit_order(product_id=product,
+                                        side='sell',
+                                        price=sell_price,
+                                        size=sell_amount)
+
+        if 'message' in buy_order:
+            print('buy error:', buy_order['message'])
+        if 'message' in sell_order:
+            print('sell error:', sell_order['message'])
+    else:
+        print(f"orders aborted")
+
+    return
+
+if __name__ == "__main__":
+    product, buy_amount_usd, swing_percent, yes, quiet = parse_args()
+    set_limit_orders(product, buy_amount_usd, swing_percent, yes, quiet)
 
 # sample order
 # 'id':'3db19014-f97d-449c-b40e-2122a1d73e50'
