@@ -54,6 +54,12 @@ def set_limit_orders(product, buy_amount_usd, swing_percent, yes, quiet):
     quiet: bool
         Flag. If set, does not print so much to terminal.
 
+    Outputs:
+    --------
+    buy_order: dict
+        limit order buy Coinbase pro API information
+    sell_order: dict
+        limit order sell Coinbase pro API information
     """
 
     # Check out user inputs
@@ -128,7 +134,7 @@ def set_limit_orders(product, buy_amount_usd, swing_percent, yes, quiet):
     else:
         print(f"orders aborted")
 
-    return
+    return buy_order, sell_order
 
 if __name__ == "__main__":
     product, buy_amount_usd, swing_percent, yes, quiet = parse_args()

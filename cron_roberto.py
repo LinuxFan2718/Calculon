@@ -39,20 +39,14 @@ def parse_args():
 
     return product, buy_amount_usd, swing_percent, quiet
 
-def check_if_limits_executed():
-    """Function which checks if any limit orders have executed 
-    since the last time this script was run.
-    It checks by looking at the order ids in the file current_order_ids.txt,
-    and comparing to the current active orders.
-    If any have executed, they'll be gone from the active orders,
-    and we'll return True.
+def get_list_of_order_ids(product):
+    """Simple function which gets all open limit orders from Coinbase pro API.
+
+    Input:
+    ------
+    product: str
+        Cryptocurrency product set limit orders on 
     """
-    # create boolean which will be returned by this func
-    should_new_orders_be_created = False
-
-    # put order ids in .txt file that will be checked each time cron runs
-    cron_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_order_ids.txt")
-
     # initialize
     config = dotenv_values(".env")
     key = config['API_KEY']
@@ -65,8 +59,33 @@ def check_if_limits_executed():
     list_orders = list(orders)
     current_order_ids = []
     for order in list_orders:
-        temp_id = order["id"]
-        current_order_ids.append(temp_id)
+        if order['product_id'] == product:
+            temp_id = order['id']
+            current_order_ids.append(temp_id)
+    return current_order_ids
+
+def check_if_limits_executed(product):
+    """Function which checks if any limit orders have executed 
+    since the last time this script was run.
+    It checks by looking at the order ids in the file current_order_ids.txt,
+    and comparing to the current active orders.
+    If any have executed, they'll be gone from the active orders,
+    and we'll return True.
+
+    Input:
+    ------
+    product: str
+        Cryptocurrency product set limit orders on 
+    """
+    # create boolean which will be returned by this func
+    should_new_orders_be_created = False
+
+    # get list of current order ids
+    current_order_ids = get_list_of_order_ids(product)
+
+    # put order ids in .txt file that will be checked each time cron runs
+    product_underscore = product.replace('-', '_')
+    cron_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"current_order_ids_{product_underscore}.txt")
 
     # read in contents of cron_filename to get old order ids
     try:
@@ -94,66 +113,109 @@ def check_if_limits_executed():
         should_new_orders_be_created = False
     else:
         print("The order ids lists are not identical")
+        print()
+        print("old_order_ids:")
+        for order_id in old_order_ids:
+            print(order_id)
+        print()
+        print("current_order_ids:")
+        for order_id in current_order_ids:
+            print(order_id)
+        print()
         should_new_orders_be_created = True
+
+        # overwrite old list of order ids, 
+        # so we can append new order ids later in record_new_limit_orders()
+        with open(cron_filename, "w") as file1:
+            for order_id in current_order_ids:
+                file1.write(f"{order_id}\n")
 
     return should_new_orders_be_created
 
-def record_new_limit_orders():
+def record_new_limit_orders(product, buy_order, sell_order):
     """Simple function which appends time of new limit orders to the end of limit_orders_record.txt,
-    and records all the new limit order ids in the current_order_ids.txt.
+    and records all the new limit order ids in the current_order_ids_{product}.txt.
+
+    Inputs:
+    ------
+    product: str
+        Cryptocurrency product set limit orders on 
+    buy_order: dict
+        limit order buy Coinbase pro API information
+    sell_order: dict
+        limit order sell Coinbase pro API information
     """
+    product_split = product.split('-')
+    product_bought = product_split[0]
+    product_sold = product_split[1]
+
     # file to store when limit orders created
-    record_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "limit_orders_record.txt")
+    product_underscore = product.replace('-', '_')
+    record_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"limit_orders_record_{product_underscore}.txt")
+
+    buy_succeeded = True
+    sell_succeeded = True
     with open(record_filename, "a") as file1:
-        file1.write(f"New limit orders created at {time.strftime('%Y %m %d, %H:%M:%S') }\n")
+        file1.write(f"\n\nNew limit orders creation attempt at {time.strftime('%Y %m %d, %H:%M:%S') }\n")
 
-    # initialize
-    config = dotenv_values(".env")
-    key = config['API_KEY']
-    b64secret = config['API_SECRET']
-    passphrase = config['PASSPHRASE']
-    auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase)
+        if 'message' in buy_order:
+            file1.write(f"\nbuy error: {buy_order['message']}\n")
+            buy_succeeded = False
+        else:
+            file1.write(f"\nLimit buy:\n")
+            file1.write(f"Price: {buy_order['price']}\n")
+            file1.write(f"Size: {buy_order['size']} {product_bought} ({float(buy_order['price']) * float(buy_order['size'])} {product_sold})\n")
+            file1.write(f"ID: {buy_order['id']}\n")
 
-    # get the current order ids
-    orders = auth_client.get_orders()
-    list_orders = list(orders)
-    current_order_ids = []
-    for order in list_orders:
-        temp_id = order["id"]
-        current_order_ids.append(temp_id)
+        if 'message' in sell_order:
+            file1.write(f"\nsell error: {sell_order['message']}\n")
+            sell_succeeded = False
+        else:
+            file1.write(f"\nLimit sell:\n")
+            file1.write(f"Price: {sell_order['price']}\n")
+            file1.write(f"Size: {sell_order['size']} {product_bought}  ({float(sell_order['price']) * float(sell_order['size'])} {product_sold})\n")
+            file1.write(f"ID: {sell_order['id']}\n")
 
-    # put order ids in .txt file that will be checked each time cron runs   
-    cron_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_order_ids.txt")
-    with open(cron_filename, "w") as file1:
-        for order_id in current_order_ids:
-            file1.write(f"{order_id}\n")
+    # append new order ids to .txt
+    cron_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"current_order_ids_{product_underscore}.txt")
+    with open(cron_filename, "a") as file1:
+        if buy_succeeded:
+            file1.write(f"{buy_order['id']}\n")
+        if sell_succeeded:
+            file1.write(f"{sell_order['id']}\n")
 
     return
 
-def record_failure():
-    """Simple function which appends time attempt to create new limit orders in limit_orders_record.txt
+def record_failure(product):
+    """Simple function which appends time attempt to create new limit orders in failure_log_{product}.txt
+
+    Inputs:
+    ------
+    product: str
+        Cryptocurrency product set limit orders on 
     """
     # file to store when limit orders created
-    record_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "limit_orders_record.txt")
+    product_underscore = product.replace('-', '_')
+    record_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"failure_log_{product_underscore}.txt")
     with open(record_filename, "a") as file1:
-        file1.write(f"Failed at {time.strftime('%Y %m %d, %H:%M:%S') }\n")
+        file1.write(f"No new limit orders set at {time.strftime('%Y %m %d, %H:%M:%S') }\n")
 
     return
 
 if __name__ == "__main__":
+    # In this case, we don't want to ask for user input     
+    # because we want to use cron to run this script every minute
+    yes = True
+    product, buy_amount_usd, swing_percent, quiet = parse_args()
     # If limit orders have been executed, 
     # we want to create new ones using roberto.set_limit_orders() function
-    if check_if_limits_executed():
-        # In this case, we don't want to ask for user input 
-        # because we want to use cron to run this script every minute
-        yes = True
-        product, buy_amount_usd, swing_percent, quiet = parse_args()
-
+    if check_if_limits_executed(product):
+        
         # use roberto.set_limit_orders function
-        set_limit_orders(product, buy_amount_usd, swing_percent, yes, quiet)
+        buy_order, sell_order = set_limit_orders(product, buy_amount_usd, swing_percent, yes, quiet)
 
         # record the new limit orders in the .txt file
-        record_new_limit_orders()
+        record_new_limit_orders(product, buy_order, sell_order)
 
         if not quiet:
             print()
@@ -161,4 +223,4 @@ if __name__ == "__main__":
             print()
 
     else:
-        record_failure()
+        record_failure(product)
