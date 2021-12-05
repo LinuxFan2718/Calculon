@@ -1,2 +1,4 @@
 cbpro
 python-dotenv
+pyqtgraph
+gpstime

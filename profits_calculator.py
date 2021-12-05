@@ -87,8 +87,6 @@ def get_current_price(product):
 def print_filled_orders_info(product, list_orders):
     """Pretty prints the filled limit order information for product
     """
-    # retrieve current price
-    current_price = get_current_price(product)
 
     print("\033[92m")
     print("Filled Sells")
@@ -144,44 +142,58 @@ def print_filled_orders_info(product, list_orders):
     print("      Value         Fees")
     print(f"{total_buy_value:7.2f} USD  {total_buy_fees:7.2f} USD ")
 
-    print("\033[96m")
-    print("Current Price")
-    print("=============")
-    print("\033[0m", end="")
-    print(f"{current_price} USD")
-    print()
+    # print("\033[96m")
+    # print("Current Price")
+    # print("=============")
+    # print("\033[0m", end="")
+    # print(f"{current_price} USD")
+    # print()
 
-    total_profits = total_sell_value - total_buy_value - total_sell_fees - total_buy_fees
+    # total_profits = total_sell_value - total_buy_value - total_sell_fees - total_buy_fees
 
-    print("\033[93m")
-    print("  Profits")
-    print("-----------")
-    print("\033[0m", end="")
-    print(f"{total_profits:7.2f} USD ")
-    print()
+    # print("\033[93m")
+    # print("  Profits")
+    # print("-----------")
+    # print("\033[0m", end="")
+    # print(f"{total_profits:7.2f} USD ")
+    # print()
 
-def process_account_history(account_generator):
+    return
+
+def process_account_history(product, account_generator):
     """Processes the generator returned by Coinbase Pro API,
     returning sorted datetimes, account balances, and trade amounts in a dictionary
     auth_client.get_account_history(account_id) returns a generator of your account history.
     This processes that generator to get the data out.
 
-    Input:
+    Inputs:
     -------
+    product: str
+        Cryptocurrency product set limit orders on 
     account_generator: generator
         generator of the account history for one currency on Coinbase Pro
 
     Output:
     account_history: dictionary
-        dictionary with keys of the datetimes, balances, and trade amouths
+        dictionary with keys of the datetimes, balances, trade amounts, and total transferred
     """
     datetimes = np.array([])
     balances = np.array([])
     amounts = np.array([])
+    total_transfer = 0.0
+    other_crypto = 0.0
     for trade in account_generator:
         datetime = get_datetime_from_utc(trade['created_at'])
         balance = float(trade['balance'])
         amount = float(trade['amount'])
+        if trade['type'] == 'transfer':
+            total_transfer += amount
+
+        # Quick fix for buys/sells that were not with the product under consideration
+        # We will track exchanges with other crypto as a general other_crypto float
+        if trade['type'] == 'match':
+            if trade['details']['product_id'] != product:
+                other_crypto += amount
 
         datetimes = np.append(datetime, datetimes)
         balances = np.append(balance, balances)
@@ -197,24 +209,23 @@ def process_account_history(account_generator):
     account_history['datetimes'] = datetimes
     account_history['balances'] = balances
     account_history['amounts'] = amounts
+    account_history['total_transfer'] = total_transfer
+    account_history['other_crypto'] = other_crypto
 
     return account_history
 
-
-def plot_user_account_holdings(product):
-    """Plots the user account holdings for each part of the product, 
-    i.e. if the product is ETH-USD, plots both ETH and USD holdings together.
+def get_account_histories(product):
+    """Get the account histories for both the crypto and fiat in product
 
     Input:
     ------
     product: str
         Cryptocurrency product set limit orders on 
-    """
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    fig_dir = os.path.join(script_dir, 'figures')
-    if not os.path.exists(fig_dir):
-        os.makedirs(fig_dir)
 
+    Outputs:
+    crypto_history: dictionary
+        account history of the 
+    """
     # initialize
     config = dotenv_values(".env")
     key = config['API_KEY']
@@ -236,8 +247,31 @@ def plot_user_account_holdings(product):
     crypto_trades = auth_client.get_account_history(crypto_id)
     fiat_trades = auth_client.get_account_history(fiat_id)
 
-    crypto_history = process_account_history(crypto_trades)
-    fiat_history = process_account_history(fiat_trades)
+    crypto_history = process_account_history(product, crypto_trades)
+    fiat_history = process_account_history(product, fiat_trades)
+
+    return crypto_history, fiat_history
+
+def plot_user_account_holdings(product):
+    """Plots the user account holdings for each part of the product, 
+    i.e. if the product is ETH-USD, plots both ETH and USD holdings together.
+
+    Input:
+    ------
+    product: str
+        Cryptocurrency product set limit orders on 
+    """
+    # Make figure directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    fig_dir = os.path.join(script_dir, 'figures')
+    if not os.path.exists(fig_dir):
+        os.makedirs(fig_dir)
+
+    product_split = product.split('-')
+    product_bought = product_split[0]
+    product_sold = product_split[1]
+
+    crypto_history, fiat_history = get_account_histories(product)
 
     # Make the plot
     fig, (s1, s2) = plt.subplots(2, sharex=True)
@@ -262,6 +296,98 @@ def plot_user_account_holdings(product):
     print(full_plot_name)
     print()
 
+    return
+
+def calculate_profits(product):
+    """Calculate simple profits at current crypto price (current holdings vs transferred holdings)
+
+    Input:
+    ------
+    product: str
+        Cryptocurrency product set limit orders on 
+
+    Output:
+    profits: float
+        Profits in fiat
+    """
+    product_split = product.split('-')
+    crypto = product_split[0]
+    fiat = product_split[1]
+
+    # retrieve user history
+    crypto_history, fiat_history = get_account_histories(product)
+
+    # retrieve current price of product
+    current_price = get_current_price(product)
+
+    # find useful values
+    crypto_transferred = crypto_history["total_transfer"]
+    fiat_transferred = fiat_history["total_transfer"]
+
+    crypto_balance = crypto_history["balances"][-1]
+    fiat_balance = fiat_history["balances"][-1]
+
+    crypto_to_other_crypto_total = crypto_history["other_crypto"]
+    fiat_to_other_crypto_total = fiat_history["other_crypto"]
+
+    # calculate differences
+    crypto_diff = crypto_balance - crypto_transferred - crypto_to_other_crypto_total
+    fiat_diff = fiat_balance - fiat_transferred - fiat_to_other_crypto_total
+
+    # calculate profits in fiat
+    profits = crypto_diff * current_price + fiat_diff
+
+    # print info
+    print("\033[96m")
+    print(f"Current Price {product}")
+    print("=============")
+    print("\033[0m", end="")
+    print(f"{current_price} {fiat}")
+    print()
+
+    print("\033[95m")
+    print("Current balances")
+    print("================")
+    print("\033[0m", end="")
+    print(f"{crypto_balance} {crypto}")
+    print(f"{fiat_balance} {fiat}")
+    print()
+
+    print("\033[94m")
+    print("Total transferred")
+    print("================")
+    print("\033[0m", end="")
+    print(f"{crypto_transferred} {crypto}")
+    print(f"{fiat_transferred} {fiat}")
+    print()
+
+    print("\033[91m")
+    print(f"Other crypto buys/sells total")
+    print("=============")
+    print("\033[0m", end="")
+    print(f"{crypto_to_other_crypto_total} {crypto}")
+    print(f"{fiat_to_other_crypto_total} {fiat}")
+    print()
+
+    print("\033[92m")
+    print("Difference (Balance - Transferred - Other crypto)")
+    print("================")
+    print("\033[0m", end="")
+    print(f"{crypto_diff} {crypto}")
+    print(f"{fiat_diff} {fiat}")
+    print()
+
+    print("\033[93m")
+    print("-----------")
+    print("  Profits  (Crypto diff * Price + Fiat diff)")
+    print("-----------")
+    print("\033[0m", end="")
+    print(f"{profits:7.2f} {fiat} ")
+    print()
+
+    return profits
+
+
 if __name__ == "__main__":
     # get user command line arguments
     product, quiet = parse_args()
@@ -270,9 +396,11 @@ if __name__ == "__main__":
     list_orders = get_list_of_order_ids(product)
 
     # print the limit order info
-    print_filled_orders_info(product, list_orders)
+    # print_filled_orders_info(product, list_orders)
 
     # plot user account history
     plot_user_account_holdings(product)
 
+    # calculate profits
+    calculate_profits(product)
         
