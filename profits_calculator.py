@@ -396,7 +396,7 @@ if __name__ == "__main__":
     list_orders = get_list_of_order_ids(product)
 
     # print the limit order info
-    # print_filled_orders_info(product, list_orders)
+    print_filled_orders_info(product, list_orders)
 
     # plot user account history
     plot_user_account_holdings(product)
