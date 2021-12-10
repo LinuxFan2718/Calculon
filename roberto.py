@@ -100,14 +100,13 @@ def set_limit_orders(product, buy_amount_usd, swing_percent, yes, quiet):
     crypto = product.split('-')[0]
     if not quiet:
         print()
-        print("\033[93m", end="")
         print(f"{crypto} current price: ${current_price}")
         print("\033[0m", end="")
         print("\033[92m", end="")
-        print(f"buy  {product} ${buy_price} ${buy_amount_usd} ({buy_amount} {crypto})")
+        print(f"buy  {product} ${buy_price} ${buy_price*buy_amount} ({buy_amount} {crypto})")
         print("\033[0m", end="")
         print("\033[91m", end="")
-        print(f"sell {product} ${sell_price} ${buy_amount_usd} ({sell_amount} {crypto})")
+        print(f"sell {product} ${sell_price} ${sell_price*sell_amount} ({sell_amount} {crypto})")
         print("\033[0m", end="")
 
     if yes:
