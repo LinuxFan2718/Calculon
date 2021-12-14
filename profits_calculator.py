@@ -88,13 +88,18 @@ def print_filled_orders_info(product, list_orders):
     """Pretty prints the filled limit order information for product
     """
 
+    product_split = product.split('-')
+    product_bought = product_split[0]
+    product_sold = product_split[1]
+
     print("\033[92m")
     print("Filled Sells")
     print("=============")
     print("\033[0m", end="")
-    print("      Value         Fees")
+    print("      Value         (Size)         Fees")
     total_sell_value = 0.0
     total_sell_fees = 0.0
+    total_sell_size = 0.0
     for order in list_orders:
         if order["status"] == "done":
             if order["side"] == "sell":
@@ -105,16 +110,18 @@ def print_filled_orders_info(product, list_orders):
 
                 total_sell_value += temp_value
                 total_sell_fees += temp_fees
+                total_sell_size += temp_size
 
-                print(f"{temp_value:7.2f} USD  {temp_fees:7.2f} USD ")
+                print(f"{temp_value:7.2f} {product_sold}  ({temp_size} {product_bought})  {temp_fees:7.2f} {product_sold} ")
 
     print("\033[91m")
     print("Filled Buys")
     print("=============")
     print("\033[0m", end="")
-    print("      Value         Fees")
+    print("      Value         (Size)         Fees")
     total_buy_value = 0.0
     total_buy_fees = 0.0
+    total_buy_size = 0.0
     for order in list_orders:
         if order["status"] == "done":
             if order["side"] == "buy":
@@ -125,22 +132,23 @@ def print_filled_orders_info(product, list_orders):
 
                 total_buy_value += temp_value
                 total_buy_fees += temp_fees
+                total_buy_size += temp_size
 
-                print(f"{temp_value:7.2f} USD  {temp_fees:7.2f} USD ")
+                print(f"{temp_value:7.2f} {product_sold} ({temp_size} {product_bought}) {temp_fees:7.2f} {product_sold} ")
 
     print("\033[92m")
     print("Total Filled Sells")
     print("-------------")
     print("\033[0m", end="")
-    print("      Value         Fees")
-    print(f"{total_sell_value:7.2f} USD  {total_sell_fees:7.2f} USD ")
+    print("      Value         (Size)         Fees")
+    print(f"{total_sell_value:7.2f} {product_sold} ({total_sell_size} {product_bought}) {total_sell_fees:7.2f} {product_sold} ")
 
     print("\033[91m")
     print("Total Filled Buys")
     print("-------------")
     print("\033[0m", end="")
-    print("      Value         Fees")
-    print(f"{total_buy_value:7.2f} USD  {total_buy_fees:7.2f} USD ")
+    print("      Value         (Size)         Fees")
+    print(f"{total_buy_value:7.2f} {product_sold} ({total_buy_size} {product_bought}) {total_buy_fees:7.2f} {product_sold} ")
 
     # print("\033[96m")
     # print("Current Price")
