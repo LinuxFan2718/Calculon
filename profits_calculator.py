@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+import pprint
 ###   Functions   ###
 def get_datetime_from_utc(utc_date_string):
     """Takes in utc_date_string, like '2021-11-25T22:52:29.119195Z'
@@ -125,8 +126,18 @@ def print_filled_orders_info(product, list_orders):
     for order in list_orders:
         if order["status"] == "done":
             if order["side"] == "buy":
-                temp_size = float(order["size"]) # in product units, i.e. ETH
-                temp_price = round(float(order["price"]), 2) # price at the time of the order fill, in units of product/USD
+                if "size" in order:
+                    temp_size = float(order["size"]) # in product units, i.e. ETH
+                else:
+                    print("order has no size")
+                    pprint.pprint(order)
+                    temp_size = 0
+                if "price" in order:
+                    temp_price = round(float(order["price"]), 2) # price at the time of the order fill, in units of product/USD
+                else:
+                    print("order has no price")
+                    pprint.pprint(order)
+                    temp_price = 0 
                 temp_fees = round(float(order["fill_fees"]), 2) # USD
                 temp_value = round(temp_size * temp_price, 2) # USD, should be the same as order["executed_value"]
 
