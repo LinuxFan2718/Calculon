@@ -9,6 +9,8 @@ import cbpro
 import datetime
 import signal
 
+import matplotlib as mpl
+mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
@@ -120,10 +122,12 @@ def animate(i, xs, ys, orders_dict):
     # print(f"xs: {xs}")
     # print(f"ys: {ys}")
     # print('\033[0m')
-    
-    xs_max = max(xs)
-    ys_min = min(ys)
-    ys_max = max(ys)
+    try:
+        xs_max = max(xs)
+        ys_min = min(ys)
+        ys_max = max(ys)
+    except ValueError:
+        xs_max = 1.0
 
     ax.set_xlim([0.0, xs_max])
     # ax.set_ylim([ys_min, ys_max])
