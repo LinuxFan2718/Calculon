@@ -173,20 +173,21 @@ Add the API key to `.env` in this directory, in the keys starting with BEGINNER.
 
 Edit the constants at the top of roberto.py
 
-Run `roberto.py` to set up limit orders for 10 dollars worth of ETH with a 5 percent separation (buy low, sell high)
+Run `roberto.py` to set up limit orders for 10 dollars worth of ETH with a 5 percent separation (buy low, sell high), and keep 0 percent of profits in fiat 
 
 ```python
-python roberto.py ETH-USD 10.0 5.0
+python roberto.py ETH-USD 10 5 0
 ```
 
-You should see some info printed to the terminal.
+You should see some info printed to the terminal.  
+The program will ask for confirmation to set the orders unless you set the `--yes` flag.
 
 ## How to set up cron_roberto
 
 On Mac, I used `crontab -e` to set up a cron job which looks like
 
 ```
-* * * * * cd ~/Git/Calculon/ && /anaconda3/envs/calculon/bin/python cron_roberto.py ETH-USD 1000.0 5.0
+* * * * * cd ~/Git/Calculon/ && /anaconda3/envs/calculon/bin/python cron_roberto.py ETH-USD 1000 5 100
 ```
 
 The first command just changes the directory to where the API key is,
@@ -196,5 +197,5 @@ and if they have, set up a new pair using roberto.set_limit_orders().
 You can also run directly from the command line like
 
 ```
-python cron_roberto.py ETH-USD 10.0 5.0
+python cron_roberto.py ETH-USD 10 5 100
 ```
