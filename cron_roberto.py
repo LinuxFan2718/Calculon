@@ -9,15 +9,15 @@ from roberto import set_limit_orders
 def parse_args():
     """Parses the user command line arguments
     """
-    parser = argparse.ArgumentParser(description='Sets up limit orders for the chosen cryptocurrency product on Coinbase Pro.\nExample:\npython roberto.py ETH-USD 1000.0 5.0')
+    parser = argparse.ArgumentParser(description='Automatically sets up a pair of limit orders for the chosen cryptocurrency product on Coinbase Pro. Checks to make sure the limit orders did or did not go off. If one did, sets up a new pair.\nExample:\npython cron_roberto.py ETH-USD 1000.0 5.0')
     parser.add_argument('product', type=str, 
                         help='Cryptocurrency product to buy, e.g. ETH-USD, BTC-USD, MATIC-USD')
     parser.add_argument('buy_amount_usd', type=float, 
                         help='Amount of crypto to buy in US dollars')
     parser.add_argument('swing_percent', type=float, default=5.0,
                         help='Percent to set limit orders above and below.  Must be between 0 and 100.  Default is 5.0')
-    # parser.add_argument('--yes', '-y', action='store_true',
-    #                     help='Flag.  If set, does not need confirmation to set up limit orders.')
+    parser.add_argument('fiat_profits_percent', type=float, default=100.0,
+                        help='Percent of profits to keep in fiat.  Must be between 0 and 100.  Default is 100.0')
     parser.add_argument('--quiet', '-q', action='store_true',
                         help='Flag.  If set, runs code in quiet mode.')
 
@@ -27,17 +27,17 @@ def parse_args():
     product = args.product
     buy_amount_usd = args.buy_amount_usd
     swing_percent = args.swing_percent
-    # yes = args.yes
+    fiat_profits_percent = args.fiat_profits_percent
     quiet = args.quiet
 
     if not quiet:
-        print(f"product         = {product}")
-        print(f"buy_amount_usd  = {buy_amount_usd}")
-        print(f"swing_percent   = {swing_percent}")
-        # print(f"yes             = {yes}")
-        print(f"quiet           = {quiet}")
+        print(f"product              = {product}")
+        print(f"buy_amount_usd       = {buy_amount_usd}")
+        print(f"swing_percent        = {swing_percent}")
+        print(f"fiat_profits_percent = {fiat_profits_percent}")
+        print(f"quiet                = {quiet}")
 
-    return product, buy_amount_usd, swing_percent, quiet
+    return product, buy_amount_usd, swing_percent, fiat_profits_percent, quiet
 
 def get_list_of_order_ids(product):
     """Simple function which gets all open limit orders from Coinbase pro API.
@@ -64,13 +64,29 @@ def get_list_of_order_ids(product):
             current_order_ids.append(temp_id)
     return current_order_ids
 
-def check_if_limits_executed(product):
-    """Function which checks if any limit orders have executed 
+def cancel_order_by_id(order_id):
+    """Simple function which cancels an order by it's order id"""
+    # initialize
+    config = dotenv_values(".env")
+    key = config['API_KEY']
+    b64secret = config['API_SECRET']
+    passphrase = config['PASSPHRASE']
+    auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase)
+
+    # cancel order
+    auth_client.cancel_order(order_id)
+
+    return
+
+def check_if_limits_executed(product, log_dir, quiet):
+    """Function which checks if any of our two limit orders have executed 
     since the last time this script was run.
     It checks by looking at the order ids in the file current_order_ids.txt,
     and comparing to the current active orders.
     If any have executed, they'll be gone from the active orders,
     and we'll return True.
+    If no file containing the current orders exists, 
+    we will create new orders and populate it, so we'll return True.
 
     Input:
     ------
@@ -80,59 +96,69 @@ def check_if_limits_executed(product):
     # create boolean which will be returned by this func
     should_new_orders_be_created = False
 
+    # put order ids in .txt file that will be checked each time cron runs
+    product_underscore = product.replace('-', '_')
+    cron_filename = os.path.join(log_dir, f"current_order_ids_{product_underscore}.txt")
+
+    # read in contents of cron_filename to get old order ids, if the file exists and is not empty
+    if os.path.exists(cron_filename):
+        if not os.stat(cron_filename).st_size == 0:
+            with open(cron_filename, "r") as file1:
+                temp_order_ids = file1.readlines()
+            old_order_ids = []
+            for order_id in temp_order_ids:
+                old_order_ids.append(order_id.strip('\n'))
+        else:
+            print()
+            print(f"File is empty: cron_filename = {cron_filename} ")
+            print(f"Creating file with order ids for next time this script is called.")
+            print()
+
+            return True
+
+    else: # if no file is found, return True to create new set of orders
+        print()
+        print(f"File not found: cron_filename = {cron_filename} ")
+        print(f"Creating file with order ids for next time this script is called.")
+        print()
+
+        return True # new orders should be created
+
     # get list of current order ids
     current_order_ids = get_list_of_order_ids(product)
 
-    # put order ids in .txt file that will be checked each time cron runs
-    product_underscore = product.replace('-', '_')
-    cron_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"current_order_ids_{product_underscore}.txt")
-
-    # read in contents of cron_filename to get old order ids
-    try:
-        with open(cron_filename, "r") as file1:
-            temp_order_ids = file1.readlines()
-        old_order_ids = []
-        for order_id in temp_order_ids:
-            old_order_ids.append(order_id.strip('\n'))
-
-    except FileNotFoundError:
-        print(f"File not found: cron_filename = {cron_filename} ")
-        print(f"Creating file with order ids for next time this script is called.")
-        print(f"No new orders will be created.")
-        with open(cron_filename, "w") as file1:
-            for order_id in current_order_ids:
-                file1.write(f"{order_id}\n")
-        
-        return False # new orders should not be created
-
-    # compare the order ids by sorting and using ==
-    old_order_ids.sort()
-    current_order_ids.sort()
-    if old_order_ids == current_order_ids:
-        print("The order ids lists are identical")
+    # compare the order ids by checking if old_order_ids is a subset of current_order_ids
+    if set(old_order_ids).issubset(current_order_ids):
+        if not quiet:
+            print()
+            print("The old_order_ids ids list is contained in current_order_ids")
+            print("No orders went off")
+            print()
         should_new_orders_be_created = False
     else:
-        print("The order ids lists are not identical")
-        print()
-        print("old_order_ids:")
-        for order_id in old_order_ids:
-            print(order_id)
-        print()
-        print("current_order_ids:")
-        for order_id in current_order_ids:
-            print(order_id)
-        print()
+        if not quiet:
+            print()
+            print("The old_order_ids ids list is *not* contained in current_order_ids")
+            print("One order went off, or was otherwise canceled")
+            print()
+        for order_id in set(old_order_ids).intersection(current_order_ids): # get intersection or order_id lists, should just be one order_id
+            if not quiet:
+                print(f"Canceling the other order of the pair: order id = {order_id}")
+            cancel_order_by_id(order_id)
+        if not quiet:
+            print("Cancel succeeded")
+            print()
+
         should_new_orders_be_created = True
 
         # overwrite old list of order ids, 
         # so we can append new order ids later in record_new_limit_orders()
         with open(cron_filename, "w") as file1:
-            for order_id in current_order_ids:
-                file1.write(f"{order_id}\n")
+            file1.write(f"")
 
     return should_new_orders_be_created
 
-def record_new_limit_orders(product, buy_order, sell_order):
+def record_new_limit_orders(product, buy_order, sell_order, log_dir):
     """Simple function which appends time of new limit orders to the end of limit_orders_record.txt,
     and records all the new limit order ids in the current_order_ids_{product}.txt.
 
@@ -151,7 +177,7 @@ def record_new_limit_orders(product, buy_order, sell_order):
 
     # file to store when limit orders created
     product_underscore = product.replace('-', '_')
-    record_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"limit_orders_record_{product_underscore}.txt")
+    record_filename = os.path.join(log_dir, f"limit_orders_record_{product_underscore}.txt")
 
     buy_succeeded = True
     sell_succeeded = True
@@ -177,7 +203,7 @@ def record_new_limit_orders(product, buy_order, sell_order):
             file1.write(f"ID: {sell_order['id']}\n")
 
     # append new order ids to .txt
-    cron_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"current_order_ids_{product_underscore}.txt")
+    cron_filename = os.path.join(log_dir, f"current_order_ids_{product_underscore}.txt")
     with open(cron_filename, "a") as file1:
         if buy_succeeded:
             file1.write(f"{buy_order['id']}\n")
@@ -186,7 +212,7 @@ def record_new_limit_orders(product, buy_order, sell_order):
 
     return
 
-def record_failure(product):
+def record_failure(product, log_dir):
     """Simple function which appends time attempt to create new limit orders in failure_log_{product}.txt
 
     Inputs:
@@ -196,26 +222,31 @@ def record_failure(product):
     """
     # file to store when limit orders created
     product_underscore = product.replace('-', '_')
-    record_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"failure_log_{product_underscore}.txt")
+    record_filename = os.path.join(log_dir, f"failure_log_{product_underscore}.txt")
     with open(record_filename, "a") as file1:
         file1.write(f"No new limit orders set at {time.strftime('%Y %m %d, %H:%M:%S') }\n")
 
     return
 
 if __name__ == "__main__":
+    # First, make sure a log/ directory exists
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
     # In this case, we don't want to ask for user input     
     # because we want to use cron to run this script every minute
     yes = True
-    product, buy_amount_usd, swing_percent, quiet = parse_args()
+    product, buy_amount_usd, swing_percent, fiat_profits_percent, quiet = parse_args()
     # If limit orders have been executed, 
     # we want to create new ones using roberto.set_limit_orders() function
-    if check_if_limits_executed(product):
+    if check_if_limits_executed(product, log_dir, quiet):
         
         # use roberto.set_limit_orders function
-        buy_order, sell_order = set_limit_orders(product, buy_amount_usd, swing_percent, yes, quiet)
+        buy_order, sell_order = set_limit_orders(product, buy_amount_usd, swing_percent, fiat_profits_percent, yes, quiet)
 
         # record the new limit orders in the .txt file
-        record_new_limit_orders(product, buy_order, sell_order)
+        record_new_limit_orders(product, buy_order, sell_order, log_dir)
 
         if not quiet:
             print()
@@ -223,4 +254,4 @@ if __name__ == "__main__":
             print()
 
     else:
-        record_failure(product)
+        record_failure(product, log_dir)
